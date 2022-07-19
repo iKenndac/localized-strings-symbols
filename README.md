@@ -14,11 +14,15 @@ The plugin creates two "routes" for each key in your `.strings` file:
 
 If you follow the SwiftUI convention of including format specifiers in your keys, the generated structures will automatically include strongly-typed functions for the format values. In SwiftUI contexts(i.e., extensions on `LocalizedStringKey`), functions are also provided for inlining SF Symbols via `Image` parameters.
 
+The plugin also offers basic pluralization support via the `_Plural` suffix for keys.
+
 For example, given the following strings file, named `Localizable.strings`:
 
 ```
 "NameAlertTitle %@" = "Hello %@!";
 "OKButtonTitle" = "OK";
+"CountdownTitle %@" = "%@ second remaining";
+"CountdownTitle_Plural %@" = "%@ seconds remaining";
 ```
 
 The output will provide symbols that can be used as such:
@@ -28,10 +32,12 @@ The output will provide symbols that can be used as such:
 VStack {
     Text(.nameAlertTitle(formatValue: "Daniel"))
     Text(.nameAlertTitle(imageValue: Image(systemName: "exclamationmark.triangle")))
+    Text(.countdownTitle(pluralizationCount: seconds, formatValue: "\(seconds)")
 }
 
 // In a non-SwiftUI context
 let alertTitle: String = Localizable.nameAlertTitle(formatValue: "Daniel")
+let countdownTitle: String = Localizable.countdownTitle(pluralizationCount: seconds, formatValue: "\(seconds)")
 ```
 
 ## Limitations
