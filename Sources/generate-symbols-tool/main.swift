@@ -32,47 +32,42 @@ let stringsDictionary: [String: String] = {
 }()
 
 let tableName = URL(fileURLWithPath: inputPath).deletingPathExtension().lastPathComponent
+let pluralizedKeySuffix: String = "_Plural"
 
 // First, let's make some SwiftUI keys.
 generatedCode.append("extension LocalizedStringKey {")
 
-for key in stringsDictionary.keys.sorted() {
-    guard !key.isEmpty else { continue }
-    let keyComponents: [String] = key.components(separatedBy: " ")
+for fullKey in stringsDictionary.keys.sorted() {
+    guard !fullKey.isEmpty else { continue }
+    let keyComponents: [String] = fullKey.components(separatedBy: " ")
     guard !keyComponents.isEmpty else { continue }
-    var keyAsSymbol = keyComponents.first!
-    keyAsSymbol.replaceSubrange(keyAsSymbol.startIndex..<keyAsSymbol.index(keyAsSymbol.startIndex, offsetBy: 1),
-                                with: keyAsSymbol.first!.lowercased())
+    let keyName = keyComponents.first!
+    var keyNameAsSymbol = keyName
+    keyNameAsSymbol.replaceSubrange(keyNameAsSymbol.startIndex..<keyNameAsSymbol.index(keyNameAsSymbol.startIndex, offsetBy: 1),
+                                    with: keyNameAsSymbol.first!.lowercased())
+    let isPlural = (keyNameAsSymbol.hasSuffix(pluralizedKeySuffix))
+    guard !isPlural else { continue }
+
+    let pluralizedKeyName = keyName.appending(pluralizedKeySuffix)
+    let fullKeyWithPluralizedName: String = {
+        var components = Array(keyComponents.dropFirst())
+        components.insert(pluralizedKeyName, at: 0)
+        return components.joined(separator: " ")
+    }()
+    let hasPluralizedVariant = (stringsDictionary[fullKeyWithPluralizedName] != nil)
 
     if keyComponents.count == 1 {
-        generatedCode.append("    static let \(keyAsSymbol): LocalizedStringKey = LocalizedStringKey(\"\(key)\")")
+        let lines = SwiftUISymbolBuilder.symbolDefinition(for: keyNameAsSymbol, fullKey: fullKey,
+                                                          hasPluralization: hasPluralizedVariant,
+                                                          pluralizedSuffix: pluralizedKeySuffix)
+        generatedCode.append(contentsOf: lines)
     } else {
-
-        let formatComponents = keyComponents.dropFirst(1).filter({ $0.starts(with: "%") })
-
-        // Image func
-        let imageParameterList: String = formatComponents.enumerated().map({ "imageValue value\($0.offset): Image" }).joined(separator: ", ")
-        generatedCode.append("    static func \(keyAsSymbol)(\(imageParameterList)) -> LocalizedStringKey {")
-        generatedCode.append("        var interpolation = LocalizedStringKey.StringInterpolation(literalCapacity: \(1 + formatComponents.count), interpolationCount: \(formatComponents.count))")
-        generatedCode.append("        interpolation.appendLiteral(\"\(keyComponents.first!)\")")
-        formatComponents.enumerated().forEach({
-            generatedCode.append("        interpolation.appendLiteral(\" \")")
-            generatedCode.append("        interpolation.appendInterpolation(value\($0.offset))")
-        })
-        generatedCode.append("        return LocalizedStringKey(stringInterpolation: interpolation)")
-        generatedCode.append("    }")
-
-        // String func
-        let stringParameterList: String = formatComponents.enumerated().map({ "formatValue value\($0.offset): String" }).joined(separator: ", ")
-        generatedCode.append("    static func \(keyAsSymbol)(\(stringParameterList)) -> LocalizedStringKey {")
-        generatedCode.append("        var interpolation = LocalizedStringKey.StringInterpolation(literalCapacity: \(1 + formatComponents.count), interpolationCount: \(formatComponents.count))")
-        generatedCode.append("        interpolation.appendLiteral(\"\(keyComponents.first!)\")")
-        formatComponents.enumerated().forEach({
-            generatedCode.append("        interpolation.appendLiteral(\" \")")
-            generatedCode.append("        interpolation.appendInterpolation(value\($0.offset))")
-        })
-        generatedCode.append("        return LocalizedStringKey(stringInterpolation: interpolation)")
-        generatedCode.append("    }")
+        let formatSpecifiers = keyComponents.dropFirst(1).filter({ $0.starts(with: "%") })
+        let lines = SwiftUISymbolBuilder.symbolDefinition(for: keyNameAsSymbol, keyName: keyName,
+                                                          formatSpecifiers: formatSpecifiers,
+                                                          hasPluralization: hasPluralizedVariant,
+                                                          pluralizedSuffix: pluralizedKeySuffix)
+        generatedCode.append(contentsOf: lines)
     }
 }
 
@@ -82,26 +77,37 @@ generatedCode.append("")
 // Next, some plain strings.
 generatedCode.append("struct \(tableName) {")
 
-for key in stringsDictionary.keys.sorted() {
-    guard !key.isEmpty else { continue }
-    let keyComponents: [String] = key.components(separatedBy: " ")
+for fullKey in stringsDictionary.keys.sorted() {
+    guard !fullKey.isEmpty else { continue }
+    let keyComponents: [String] = fullKey.components(separatedBy: " ")
     guard !keyComponents.isEmpty else { continue }
-    var keyAsSymbol = keyComponents.first!
-    keyAsSymbol.replaceSubrange(keyAsSymbol.startIndex..<keyAsSymbol.index(keyAsSymbol.startIndex, offsetBy: 1),
-                                with: keyAsSymbol.first!.lowercased())
+    let keyName = keyComponents.first!
+    var keyNameAsSymbol = keyName
+    keyNameAsSymbol.replaceSubrange(keyNameAsSymbol.startIndex..<keyNameAsSymbol.index(keyNameAsSymbol.startIndex, offsetBy: 1),
+                                    with: keyNameAsSymbol.first!.lowercased())
+    let isPlural = (keyNameAsSymbol.hasSuffix(pluralizedKeySuffix))
+    guard !isPlural else { continue }
+
+    let pluralizedKeyName = keyName.appending(pluralizedKeySuffix)
+    let fullKeyWithPluralizedName: String = {
+        var components = Array(keyComponents.dropFirst())
+        components.insert(pluralizedKeyName, at: 0)
+        return components.joined(separator: " ")
+    }()
+    let hasPluralizedVariant = (stringsDictionary[fullKeyWithPluralizedName] != nil)
 
     if keyComponents.count == 1 {
-        generatedCode.append("    static var \(keyAsSymbol): String {")
-        generatedCode.append("        return NSLocalizedString(\"\(key)\", tableName: \"\(tableName)\", comment: \"\")")
-        generatedCode.append("    }")
+        let lines = StringSymbolBuilder.symbolDefinition(for: keyNameAsSymbol, fullKey: fullKey,
+                                                         hasPluralization: hasPluralizedVariant,
+                                                         pluralizedFullKey: fullKeyWithPluralizedName)
+        generatedCode.append(contentsOf: lines)
     } else {
-        let formatComponents = keyComponents.dropFirst(1).filter({ $0.starts(with: "%") })
-        let stringParameterList: String = formatComponents.enumerated().map({ "formatValue value\($0.offset): String" }).joined(separator: ", ")
-        let parameterFormatList: String = formatComponents.enumerated().map({ "value\($0.offset)" }).joined(separator: ", ")
-        generatedCode.append("    static func \(keyAsSymbol)(\(stringParameterList)) -> String {")
-        generatedCode.append("        let string = NSLocalizedString(\"\(key)\", tableName: \"\(tableName)\", comment: \"\")")
-        generatedCode.append("        return String(format: string, \(parameterFormatList))")
-        generatedCode.append("    }")
+        let formatSpecifiers = keyComponents.dropFirst(1).filter({ $0.starts(with: "%") })
+        let lines = StringSymbolBuilder.symbolDefinition(for: keyNameAsSymbol, fullKey: fullKey,
+                                                         formatSpecifiers: formatSpecifiers,
+                                                         hasPluralization: hasPluralizedVariant,
+                                                         pluralizedFullKey: fullKeyWithPluralizedName)
+        generatedCode.append(contentsOf: lines)
     }
 }
 
