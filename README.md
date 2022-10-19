@@ -84,10 +84,9 @@ Then, add the dependency and the plugin to your target(s):
 
 ``` swift
 …
-    .target(
+    .executableTarget(
         name: "MyCoolPackage",
-        dependencies: [.product(name: "Generate Strings File Symbols", package: "localized-strings-symbols")],
-        plugins: ["Generate Strings File Symbols"]
+        plugins: [.plugin(name: "Generate Strings File Symbols", package: "localized-strings-symbols")]
     ),
 …
 ```
