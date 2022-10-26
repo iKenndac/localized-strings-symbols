@@ -50,14 +50,15 @@ struct SwiftUISymbolBuilder {
     static func symbolDefinition(for keySymbol: String, fullKey: String, hasPluralization: Bool,
                                  pluralizedSuffix: String, indentLevel: Int = 4) -> [String] {
         let indent: String = String(repeating: " ", count: indentLevel)
+        let availabilityLine: String = "\(indent)@available(iOS 13.0, macOS 10.15, macCatalyst 13.0, tvOS 13.0, watchOS 6.0, *)"
         if hasPluralization {
-            var generatedCode: [String] = []
+            var generatedCode: [String] = [availabilityLine]
             generatedCode.append("\(indent)static func \(keySymbol)(pluralizationCount: Int) -> LocalizedStringKey {")
             generatedCode.append("\(indent)\(indent)return LocalizedStringKey(pluralizationCount == 1 ? \"\(fullKey)\" : \"\(fullKey)\(pluralizedSuffix)\")")
             generatedCode.append("\(indent)}")
             return generatedCode
         } else {
-            return ["\(indent)static let \(keySymbol): LocalizedStringKey = LocalizedStringKey(\"\(fullKey)\")"]
+            return [availabilityLine, "\(indent)static let \(keySymbol): LocalizedStringKey = LocalizedStringKey(\"\(fullKey)\")"]
         }
     }
 
@@ -69,6 +70,9 @@ struct SwiftUISymbolBuilder {
         // Image func
         let imageParameterList: String = formatSpecifiers.enumerated().map({ "imageValue value\($0.offset): Image" }).joined(separator: ", ")
 
+        let imageInterpolationAvailabilityLine: String = "\(indent)@available(iOS 14.0, macOS 11.0, macCatalyst 14.0, tvOS 14.0, watchOS 7.0, *)"
+        generatedCode.append(imageInterpolationAvailabilityLine)
+        
         if hasPluralization {
             generatedCode.append("\(indent)static func \(keySymbol)(pluralizationCount: Int, \(imageParameterList)) -> LocalizedStringKey {")
         } else {
@@ -92,6 +96,9 @@ struct SwiftUISymbolBuilder {
 
         // String func
         let stringParameterList: String = formatSpecifiers.enumerated().map({ "formatValue value\($0.offset): String" }).joined(separator: ", ")
+
+        let stringInterpolationAvailabilityLine: String = "\(indent)@available(iOS 13.0, macOS 10.15, macCatalyst 13.0, tvOS 13.0, watchOS 6.0, *)"
+        generatedCode.append(stringInterpolationAvailabilityLine)
 
         if hasPluralization {
             generatedCode.append("\(indent)static func \(keySymbol)(pluralizationCount: Int, \(stringParameterList)) -> LocalizedStringKey {")
