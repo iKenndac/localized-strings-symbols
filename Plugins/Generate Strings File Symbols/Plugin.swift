@@ -83,7 +83,7 @@ extension GenerateSymbols: XcodeBuildToolPlugin {
 
     func createBuildCommands(context: XcodePluginContext, target: XcodeTarget) throws -> [Command] {
         return try stringsFilesToProcess(in: target.inputFiles.filter({ $0.path.extension == "strings" })).map({ stringsFile in
-            let outputFile = context.pluginWorkDirectory.appending(subpath: "\(stringsFile.tableName).swift")
+            let outputFile = context.pluginWorkDirectory.appending(subpath: "\(stringsFile.tableName)-StringSymbols.swift")
             let name = "Generating symbols for \(stringsFile.keyCount) keys in \(stringsFile.path.lastComponent) from \(stringsFile.lprojName)"
 
             return .buildCommand(displayName: name,
