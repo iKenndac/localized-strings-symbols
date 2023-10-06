@@ -40,6 +40,14 @@ let alertTitle: String = Localizable.nameAlertTitle(formatValue: "Daniel")
 let countdownTitle: String = Localizable.countdownTitle(pluralizationCount: seconds, formatValue: "\(seconds)")
 ```
 
+## Non-Default Table Names and SwiftUI
+
+If you're using strings table names other than `Localized.strings`, SwiftUI components will need to be told which table to look up the string in (i.e., table name information isn't enapsulated into `LocalizedStringKey`). This plugin generates a handy getter for you:
+
+``` swift
+Text(.nameAlertTitle(formatValue: "Daniel"), tableName: GeneralUI.tableName)
+```
+
 ## Limitations
 
 Right now this is a _very_ basic plugin, and as such there are a number of limitations and requirements. If you'd like to help make it better, pull requests are welcome! 
