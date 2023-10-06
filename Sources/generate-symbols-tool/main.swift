@@ -133,6 +133,12 @@ for fullKey in stringsDictionary.keys.sorted() {
 generatedCode.append("}")
 generatedCode.append("")
 
+// Finally, add the table name to the struct, which is useful in SwiftUI.
+generatedCode.append("extension \(tableName) {")
+generatedCode.append("    static var tableName: String { return \"\(tableName)\" }")
+generatedCode.append("}")
+generatedCode.append("")
+
 // Write out file.
 let output = generatedCode.joined(separator: "\n")
 try output.write(to: URL(fileURLWithPath: outputPath), atomically: true, encoding: .utf8)
