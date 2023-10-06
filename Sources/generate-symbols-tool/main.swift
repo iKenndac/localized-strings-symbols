@@ -37,14 +37,34 @@ let pluralizedKeySuffix: String = "_Plural"
 // First, let's make some SwiftUI keys.
 generatedCode.append("extension LocalizedStringKey {")
 
+func symbolizeKey(_ key: String) -> String {
+    guard !key.isEmpty else { return key }
+    var keyNameAsSymbol: String = key
+
+    // First, strip out leading digits (they're not allowed)
+    while !keyNameAsSymbol.isEmpty, keyNameAsSymbol[keyNameAsSymbol.startIndex].isNumber {
+        keyNameAsSymbol = String(keyNameAsSymbol.dropFirst())
+    }
+
+    guard !keyNameAsSymbol.isEmpty else { return keyNameAsSymbol }
+
+    // Next, lowercase the first character
+    keyNameAsSymbol.replaceSubrange(keyNameAsSymbol.startIndex..<keyNameAsSymbol.index(keyNameAsSymbol.startIndex, offsetBy: 1),
+                                    with: keyNameAsSymbol.first!.lowercased())
+
+    // Finally, strip out disallowed punctuation
+    keyNameAsSymbol = keyNameAsSymbol.replacingOccurrences(of: "-", with: "")
+    keyNameAsSymbol = keyNameAsSymbol.replacingOccurrences(of: ".", with: "")
+    return keyNameAsSymbol
+}
+
 for fullKey in stringsDictionary.keys.sorted() {
     guard !fullKey.isEmpty else { continue }
     let keyComponents: [String] = fullKey.components(separatedBy: " ")
     guard !keyComponents.isEmpty else { continue }
     let keyName = keyComponents.first!
-    var keyNameAsSymbol = keyName
-    keyNameAsSymbol.replaceSubrange(keyNameAsSymbol.startIndex..<keyNameAsSymbol.index(keyNameAsSymbol.startIndex, offsetBy: 1),
-                                    with: keyNameAsSymbol.first!.lowercased())
+    let keyNameAsSymbol = symbolizeKey(keyName)
+
     let isPlural = (keyNameAsSymbol.hasSuffix(pluralizedKeySuffix))
     guard !isPlural else { continue }
 
@@ -82,9 +102,8 @@ for fullKey in stringsDictionary.keys.sorted() {
     let keyComponents: [String] = fullKey.components(separatedBy: " ")
     guard !keyComponents.isEmpty else { continue }
     let keyName = keyComponents.first!
-    var keyNameAsSymbol = keyName
-    keyNameAsSymbol.replaceSubrange(keyNameAsSymbol.startIndex..<keyNameAsSymbol.index(keyNameAsSymbol.startIndex, offsetBy: 1),
-                                    with: keyNameAsSymbol.first!.lowercased())
+    let keyNameAsSymbol = symbolizeKey(keyName)
+    
     let isPlural = (keyNameAsSymbol.hasSuffix(pluralizedKeySuffix))
     guard !isPlural else { continue }
 
