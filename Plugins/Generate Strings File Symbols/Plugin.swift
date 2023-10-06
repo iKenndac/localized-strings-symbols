@@ -33,8 +33,12 @@ extension Path {
             return Array(target.sourceFiles(withSuffix: $0).map({ $0.path.stem }))
         }))
 
+        // We also manually exlude "InfoPlist.strings", since that tends to cause trouble.
+        var excludedTableNames: Set<String> = ["InfoPlist"]
+        excludedTableNames.formUnion(uiFileLikelyTableNames)
+
         return try stringsFilesToProcess(in: Array(target.sourceFiles(withSuffix: "strings")),
-                                         excludingTablesWithNames: uiFileLikelyTableNames)
+                                         excludingTablesWithNames: excludedTableNames)
         .map({ stringsFile in
             let outputFile = context.pluginWorkDirectory.appending(subpath: "\(stringsFile.tableName).swift")
             let name = "Generating symbols for \(stringsFile.keyCount) keys in \(stringsFile.path.lastComponent) from \(stringsFile.lprojName)"
@@ -99,8 +103,12 @@ extension GenerateSymbols: XcodeBuildToolPlugin {
             return Array(target.inputFiles.filter({ $0.path.extension == uiFileExtension }).map({ $0.path.stem }))
         }))
 
+        // We also manually exlude "InfoPlist.strings", since that tends to cause trouble.
+        var excludedTableNames: Set<String> = ["InfoPlist"]
+        excludedTableNames.formUnion(uiFileLikelyTableNames)
+
         return try stringsFilesToProcess(in: target.inputFiles.filter({ $0.path.extension == "strings" }),
-                                         excludingTablesWithNames: uiFileLikelyTableNames)
+                                         excludingTablesWithNames: excludedTableNames)
         .map({ stringsFile in
             let outputFile = context.pluginWorkDirectory.appending(subpath: "\(stringsFile.tableName)-StringSymbols.swift")
             let name = "Generating symbols for \(stringsFile.keyCount) keys in \(stringsFile.path.lastComponent) from \(stringsFile.lprojName)"
