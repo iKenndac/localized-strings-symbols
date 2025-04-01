@@ -68,7 +68,7 @@ struct SwiftUISymbolBuilder {
         let indent: String = String(repeating: " ", count: indentLevel)
         var generatedCode: [String] = []
         // Image func
-        let imageParameterList: String = formatSpecifiers.enumerated().map({ "imageValue value\($0.offset): Image" }).joined(separator: ", ")
+        let imageParameterList: String = formatSpecifiers.enumerated().map({ "imageValue value\($0.offset): SwiftUI.Image" }).joined(separator: ", ")
 
         let imageInterpolationAvailabilityLine: String = "\(indent)@available(iOS 14.0, macOS 11.0, macCatalyst 14.0, tvOS 14.0, watchOS 7.0, *)"
         generatedCode.append(imageInterpolationAvailabilityLine)
