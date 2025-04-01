@@ -55,6 +55,9 @@ func symbolizeKey(_ key: String) -> String {
     // Finally, strip out disallowed punctuation
     keyNameAsSymbol = keyNameAsSymbol.replacingOccurrences(of: "-", with: "")
     keyNameAsSymbol = keyNameAsSymbol.replacingOccurrences(of: ".", with: "")
+    keyNameAsSymbol = keyNameAsSymbol.replacingOccurrences(of: "{", with: "")
+    keyNameAsSymbol = keyNameAsSymbol.replacingOccurrences(of: "}", with: "")
+    keyNameAsSymbol = keyNameAsSymbol.replacingOccurrences(of: "$", with: "")
     return keyNameAsSymbol
 }
 
