@@ -6,6 +6,11 @@ if arguments.count < 3 {
     exit(1)
 }
 
+guard #available(iOS 13.0, macCatalyst 13.0, macOS 10.15, tvOS 13.0, watchOS 6.0, visionOS 1.0, *) else {
+    print("Unsupported OS")
+    exit(1)
+}
+
 let (inputPath, outputPath) = (arguments[1], arguments[2])
 
 var generatedCode: [String] = [
@@ -52,46 +57,103 @@ func symbolizeKey(_ key: String) -> String {
     keyNameAsSymbol.replaceSubrange(keyNameAsSymbol.startIndex..<keyNameAsSymbol.index(keyNameAsSymbol.startIndex, offsetBy: 1),
                                     with: keyNameAsSymbol.first!.lowercased())
 
-    // Finally, strip out disallowed punctuation
-    keyNameAsSymbol = keyNameAsSymbol.replacingOccurrences(of: "-", with: "")
-    keyNameAsSymbol = keyNameAsSymbol.replacingOccurrences(of: ".", with: "")
-    keyNameAsSymbol = keyNameAsSymbol.replacingOccurrences(of: "{", with: "")
-    keyNameAsSymbol = keyNameAsSymbol.replacingOccurrences(of: "}", with: "")
-    keyNameAsSymbol = keyNameAsSymbol.replacingOccurrences(of: "$", with: "")
+    // Finally, strip out disallowed characters
+    var allowedSymbolCharacters = CharacterSet(charactersIn: "1234567890")
+    allowedSymbolCharacters.insert(charactersIn: "abcdefghijklmnopqrstuvwxyz")
+    allowedSymbolCharacters.insert(charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+    allowedSymbolCharacters.insert(charactersIn: "_")
+
+    keyNameAsSymbol = keyNameAsSymbol.components(separatedBy: allowedSymbolCharacters.inverted).joined()
     return keyNameAsSymbol
+}
+
+struct ParsedKey {
+    let isPluralVariant: Bool // Is this key a plural variant?
+    let formatSpecifierCount: Int
+    let originalKey: String // The key in the strings file.
+    let pluralisedOriginalKey: String // The pluralised key in the strings file.
+    let symbolisedKey: String // The key as it should be expressed as a Swift symbol.
+
+    var pluralisedSymbolisedKey: String {
+        if isPluralVariant {
+            return symbolisedKey
+        } else {
+            return symbolisedKey + pluralizedKeySuffix
+        }
+    }
+}
+
+func parseKey(_ key: String) -> ParsedKey? {
+    guard !key.isEmpty else { return nil }
+    guard #available(iOS 13.0, macCatalyst 13.0, macOS 10.15, tvOS 13.0, watchOS 6.0, visionOS 1.0, *) else { return nil }
+
+    // We need to support two kinds of key:
+    // - Human strings as keys: "You have %@ days remaining!"
+    // - Non-human strings as keys: "DaysRemainingFormatter %@".
+    // - Non-human pluralised strings as keys: "DaysRemainingFormatter_Plural %@"
+
+    var componentsWithSpaces: [String] = []
+    var formatSpecifierCount: Int = 0
+
+    // Scanner breaks for our use case if %@ is first
+    var parsingKey = key
+    while parsingKey.hasPrefix("%@") {
+        componentsWithSpaces.append("%@")
+        formatSpecifierCount += 1
+        parsingKey.removeFirst(2)
+    }
+
+    let scanner = Scanner(string: parsingKey)
+    scanner.charactersToBeSkipped = CharacterSet()
+    while let literal = scanner.scanUpToString("%@") {
+        componentsWithSpaces.append(literal)
+        if let _ = scanner.scanString("%@") {
+            componentsWithSpaces.append("%@")
+            formatSpecifierCount += 1
+        }
+    }
+
+    let keyWithoutFormatSpecifiers: String = componentsWithSpaces.filter({ $0 != "%@" }).joined()
+    let isPlural = (keyWithoutFormatSpecifiers.trimmingCharacters(in: .whitespaces).hasSuffix(pluralizedKeySuffix))
+
+    let pluralKeyVariant: String
+    if isPlural {
+        pluralKeyVariant = key
+    } else {
+        // This is building the "DaysRemainingFormatter_Plural %@" variant.
+        var pluralisedComponentsWithSpaces = componentsWithSpaces
+        let indexes = Array(0..<pluralisedComponentsWithSpaces.count).reversed()
+		var hasInsertedPlural: Bool = false
+		for componentIndex in indexes {
+			var component = pluralisedComponentsWithSpaces[componentIndex]
+			if component == "%@" { continue }
+			// This is a string component with maybe spaces in it.
+			for (characterIndex, character) in component.enumerated().reversed() {
+				if character == " " { continue }
+				component.insert(contentsOf: pluralizedKeySuffix, at: component.index(component.startIndex, offsetBy: characterIndex + 1))
+				pluralisedComponentsWithSpaces[componentIndex] = component
+				hasInsertedPlural = true
+				break
+			}
+			if hasInsertedPlural { break }
+		}
+        pluralKeyVariant = pluralisedComponentsWithSpaces.joined()
+    }
+
+    let symbolisedKey = symbolizeKey(keyWithoutFormatSpecifiers)
+
+    return ParsedKey(isPluralVariant: isPlural, formatSpecifierCount: formatSpecifierCount,
+                     originalKey: key, pluralisedOriginalKey: pluralKeyVariant, symbolisedKey: symbolisedKey)
 }
 
 for fullKey in stringsDictionary.keys.sorted() {
     guard !fullKey.isEmpty else { continue }
-    let keyComponents: [String] = fullKey.components(separatedBy: " ")
-    guard !keyComponents.isEmpty else { continue }
-    let keyName = keyComponents.first!
-    let keyNameAsSymbol = symbolizeKey(keyName)
-
-    let isPlural = (keyNameAsSymbol.hasSuffix(pluralizedKeySuffix))
-    guard !isPlural else { continue }
-
-    let pluralizedKeyName = keyName.appending(pluralizedKeySuffix)
-    let fullKeyWithPluralizedName: String = {
-        var components = Array(keyComponents.dropFirst())
-        components.insert(pluralizedKeyName, at: 0)
-        return components.joined(separator: " ")
-    }()
-    let hasPluralizedVariant = (stringsDictionary[fullKeyWithPluralizedName] != nil)
-
-    if keyComponents.count == 1 {
-        let lines = SwiftUISymbolBuilder.symbolDefinition(for: keyNameAsSymbol, fullKey: fullKey,
-                                                          hasPluralization: hasPluralizedVariant,
-                                                          pluralizedSuffix: pluralizedKeySuffix)
-        generatedCode.append(contentsOf: lines)
-    } else {
-        let formatSpecifiers = keyComponents.dropFirst(1).filter({ $0.starts(with: "%") })
-        let lines = SwiftUISymbolBuilder.symbolDefinition(for: keyNameAsSymbol, keyName: keyName,
-                                                          formatSpecifiers: formatSpecifiers,
-                                                          hasPluralization: hasPluralizedVariant,
-                                                          pluralizedSuffix: pluralizedKeySuffix)
-        generatedCode.append(contentsOf: lines)
-    }
+    guard let parsedKey = parseKey(fullKey) else { continue }
+    guard !parsedKey.isPluralVariant else { continue }
+    let hasPluralizedVariant = (stringsDictionary[parsedKey.pluralisedOriginalKey] != nil)
+    let lines: [String] = SwiftUISymbolBuilder.symbolDefinition(key: parsedKey, hasPluralization: hasPluralizedVariant,
+                                                                pluralizedSuffix: pluralizedKeySuffix)
+    generatedCode.append(contentsOf: lines)
 }
 
 generatedCode.append("}")
@@ -102,35 +164,11 @@ generatedCode.append("struct \(tableName) {")
 
 for fullKey in stringsDictionary.keys.sorted() {
     guard !fullKey.isEmpty else { continue }
-    let keyComponents: [String] = fullKey.components(separatedBy: " ")
-    guard !keyComponents.isEmpty else { continue }
-    let keyName = keyComponents.first!
-    let keyNameAsSymbol = symbolizeKey(keyName)
-    
-    let isPlural = (keyNameAsSymbol.hasSuffix(pluralizedKeySuffix))
-    guard !isPlural else { continue }
-
-    let pluralizedKeyName = keyName.appending(pluralizedKeySuffix)
-    let fullKeyWithPluralizedName: String = {
-        var components = Array(keyComponents.dropFirst())
-        components.insert(pluralizedKeyName, at: 0)
-        return components.joined(separator: " ")
-    }()
-    let hasPluralizedVariant = (stringsDictionary[fullKeyWithPluralizedName] != nil)
-
-    if keyComponents.count == 1 {
-        let lines = StringSymbolBuilder.symbolDefinition(for: keyNameAsSymbol, fullKey: fullKey,
-                                                         hasPluralization: hasPluralizedVariant,
-                                                         pluralizedFullKey: fullKeyWithPluralizedName)
-        generatedCode.append(contentsOf: lines)
-    } else {
-        let formatSpecifiers = keyComponents.dropFirst(1).filter({ $0.starts(with: "%") })
-        let lines = StringSymbolBuilder.symbolDefinition(for: keyNameAsSymbol, fullKey: fullKey,
-                                                         formatSpecifiers: formatSpecifiers,
-                                                         hasPluralization: hasPluralizedVariant,
-                                                         pluralizedFullKey: fullKeyWithPluralizedName)
-        generatedCode.append(contentsOf: lines)
-    }
+    guard let parsedKey = parseKey(fullKey) else { continue }
+    guard !parsedKey.isPluralVariant else { continue }
+    let hasPluralizedVariant = (stringsDictionary[parsedKey.pluralisedOriginalKey] != nil)
+    let lines = StringSymbolBuilder.symbolDefinition(for: parsedKey, hasPluralization: hasPluralizedVariant)
+    generatedCode.append(contentsOf: lines)
 }
 
 generatedCode.append("}")

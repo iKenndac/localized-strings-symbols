@@ -52,7 +52,7 @@ Text(.nameAlertTitle(formatValue: "Daniel"), tableName: GeneralUI.tableName)
 
 Right now this is a _very_ basic plugin, and as such there are a number of limitations and requirements. If you'd like to help make it better, pull requests are welcome! 
 
-- Strings file keys are expected to be in CamelCase, with format specifiers space-separated at the end of the key matching in number to the ones in the value (for example: `"NameAlertTitle %@" = "Hello %@!";`). 
+- Format specifiers need to be in the key equal to the number of the ones in the value (for example: `"NameAlertTitle %@" = "Hello %@!";`, or `"Hello %@!" = "Hello %@!";`). 
 
 - Only the `%@` format specifier is supported.
 
