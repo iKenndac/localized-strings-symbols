@@ -52,7 +52,7 @@ struct SwiftUISymbolBuilder {
                 generatedCode.append("\(indent)}")
                 return generatedCode
             } else {
-                return [availabilityLine, "\(indent)static let \(key.symbolisedKey): LocalizedStringKey = LocalizedStringKey(\"\(key.originalKey)\")"]
+                return [availabilityLine, "\(indent)@MainActor static let \(key.symbolisedKey): LocalizedStringKey = LocalizedStringKey(\"\(key.originalKey)\")"]
             }
         }
 
