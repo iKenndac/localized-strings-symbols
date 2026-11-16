@@ -161,6 +161,9 @@ generatedCode.append("")
 
 // Next, some plain strings.
 generatedCode.append("public struct \(tableName) {")
+generatedCode.append("    private class BundleFinder {}")
+generatedCode.append("    private static let tableBundle: Bundle = { return Bundle(for: BundleFinder.self) }()")
+generatedCode.append("")
 
 for fullKey in stringsDictionary.keys.sorted() {
     guard !fullKey.isEmpty else { continue }
