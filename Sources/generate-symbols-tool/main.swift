@@ -162,7 +162,13 @@ generatedCode.append("")
 // Next, some plain strings.
 generatedCode.append("public struct \(tableName) {")
 generatedCode.append("    private class BundleFinder {}")
-generatedCode.append("    private static let tableBundle: Bundle = { return Bundle(for: BundleFinder.self) }()")
+generatedCode.append("    private static let tableBundle: Bundle = {")
+generatedCode.append("    #if SWIFT_PACKAGE")
+generatedCode.append("        return Bundle.module")
+generatedCode.append("    #else")
+generatedCode.append("        return Bundle(for: BundleFinder.self)")
+generatedCode.append("    #endif")
+generatedCode.append("    }()")
 generatedCode.append("")
 
 for fullKey in stringsDictionary.keys.sorted() {
