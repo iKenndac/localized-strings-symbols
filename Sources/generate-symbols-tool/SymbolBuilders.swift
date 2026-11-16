@@ -9,11 +9,11 @@ struct StringSymbolBuilder {
 
         if key.formatSpecifierCount == 0 {
             if hasPluralization {
-                generatedCode.append("\(indent)static func \(key.symbolisedKey)(pluralizationCount: Int) -> String {")
+                generatedCode.append("\(indent)public static func \(key.symbolisedKey)(pluralizationCount: Int) -> String {")
                 generatedCode.append("\(indent)\(indent)return NSLocalizedString(pluralizationCount == 1 ? \"\(key.originalKey)\" : \"\(key.pluralisedOriginalKey)\", tableName: \"\(tableName)\", comment: \"\")")
                 generatedCode.append("\(indent)}")
             } else {
-                generatedCode.append("\(indent)static var \(key.symbolisedKey): String {")
+                generatedCode.append("\(indent)public static var \(key.symbolisedKey): String {")
                 generatedCode.append("\(indent)\(indent)return NSLocalizedString(\"\(key.originalKey)\", tableName: \"\(tableName)\", comment: \"\")")
                 generatedCode.append("\(indent)}")
             }
@@ -22,12 +22,12 @@ struct StringSymbolBuilder {
             let parameterFormatList: String = (0..<key.formatSpecifierCount).map({ "value\($0)" }).joined(separator: ", ")
 
             if hasPluralization {
-                generatedCode.append("\(indent)static func \(key.symbolisedKey)(pluralizationCount: Int, \(stringParameterList)) -> String {")
+                generatedCode.append("\(indent)public static func \(key.symbolisedKey)(pluralizationCount: Int, \(stringParameterList)) -> String {")
                 generatedCode.append("\(indent)\(indent)let string = NSLocalizedString(pluralizationCount == 1 ? \"\(key.originalKey)\" : \"\(key.pluralisedOriginalKey)\", tableName: \"\(tableName)\", comment: \"\")")
                 generatedCode.append("\(indent)\(indent)return String(format: string, \(parameterFormatList))")
                 generatedCode.append("\(indent)}")
             } else {
-                generatedCode.append("\(indent)static func \(key.symbolisedKey)(\(stringParameterList)) -> String {")
+                generatedCode.append("\(indent)public static func \(key.symbolisedKey)(\(stringParameterList)) -> String {")
                 generatedCode.append("\(indent)\(indent)let string = NSLocalizedString(\"\(key.originalKey)\", tableName: \"\(tableName)\", comment: \"\")")
                 generatedCode.append("\(indent)\(indent)return String(format: string, \(parameterFormatList))")
                 generatedCode.append("\(indent)}")

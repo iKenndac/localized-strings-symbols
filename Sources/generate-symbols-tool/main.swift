@@ -40,7 +40,7 @@ let tableName = URL(fileURLWithPath: inputPath).deletingPathExtension().lastPath
 let pluralizedKeySuffix: String = "_Plural"
 
 // First, let's make some SwiftUI keys.
-generatedCode.append("extension LocalizedStringKey {")
+generatedCode.append("public extension LocalizedStringKey {")
 
 func symbolizeKey(_ key: String) -> String {
     guard !key.isEmpty else { return key }
@@ -160,7 +160,7 @@ generatedCode.append("}")
 generatedCode.append("")
 
 // Next, some plain strings.
-generatedCode.append("struct \(tableName) {")
+generatedCode.append("public struct \(tableName) {")
 
 for fullKey in stringsDictionary.keys.sorted() {
     guard !fullKey.isEmpty else { continue }
@@ -175,7 +175,7 @@ generatedCode.append("}")
 generatedCode.append("")
 
 // Finally, add the table name to the struct, which is useful in SwiftUI.
-generatedCode.append("extension \(tableName) {")
+generatedCode.append("public extension \(tableName) {")
 generatedCode.append("    static var tableName: String { return \"\(tableName)\" }")
 generatedCode.append("}")
 generatedCode.append("")
